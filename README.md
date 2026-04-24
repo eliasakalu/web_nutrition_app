@@ -1,28 +1,32 @@
 # Smart Meal Planner & Health Nutrition System
+### Restricted To HTML, CSS, JS and PHP 
 
-A web-based system designed to help users plan daily and weekly meals based on their personal health data (age, weight, and goals). The platform provides personalized meal recommendations using rule-based logic and user preferences.
+An automated, web-based nutrition management system designed to provide personalized meal recommendations based on user health profiles. Built with a focus on core web technologies and rule-based logic.
 
-## 🚀 Features
-* [cite_start]**User Profiles:** Calculation of BMI and goal setting[cite: 7].
-* [cite_start]**Personalized Recommendations:** Rule-based meal suggestions tailored to user profiles[cite: 5].
-* [cite_start]**Food Database:** Comprehensive list of calories and nutrients.
-* [cite_start]**Weekly Planner:** Organize your nutrition for the entire week.
-* [cite_start]**Progress Tracking:** Monitor weight and calorie history over time[cite: 13].
+## 🚀 Project Overview
+This system helps users manage their dietary health by calculating nutritional needs (BMI, Caloric intake) and generating weekly meal plans. It is designed to be lightweight, efficient, and user-centric.
 
-## 🛠️ Tech Stack
+### Key Features
+* **User Health Profiling:** Tracks age, weight, height, and health goals to calculate BMI.
+* **Personalized Recommendations:** Rule-based logic to suggest meals based on user data.
+* **Weekly Planner:** A dashboard for users to organize their meals for the week.
+* **Food Database:** A comprehensive catalog of food items with calorie and nutrient tracking.
+* **Progress Tracking:** Visual indicators of nutrition goal completion.
+
+## 🛠 Tech Stack
 * **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
 * **Backend:** PHP (Vanilla)
 * **Database:** MySQL
-* **Design:** Figma / Stitch
+* **Design:** Figma & Adobe Illustrator
 
-## 📂 Project Structure
+## 📂 Repository Structure
 ```text
-├── assets/          # CSS, JS, and Images
-├── config/          # Database connection (PHP)
-├── includes/        # Reusable PHP components (Header/Footer)
-├── sql/             # Database schema files
-├── views/           # Page templates (Profile, Dashboard, Planner)
-└── index.php        # Main entry point
-# web_nutrition_app
-# web_nutrition_app
-# web_nutrition_app
+.
+├── web_nutrition_app/     # Core application folder
+│   ├── assets/            # CSS, Images, and JS files
+│   ├── config/            # Database connection (db.php)
+│   ├── includes/          # Reusable PHP components (header, footer)
+│   ├── modules/           # BMI logic and recommendation scripts
+│   └── index.php          # Application entry point
+├── docs/                  # Project proposal and documentation
+└── README.md              # Project guide
