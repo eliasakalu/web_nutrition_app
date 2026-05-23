@@ -404,8 +404,7 @@ body {
    Sidebar left | main content right
 ══════════════════════════════════════════ */
 .app-wrap {
-  display: grid;
-  grid-template-columns: 220px 1fr;
+  display: block;
   min-height: 100vh;
 }
 
