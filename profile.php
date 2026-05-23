@@ -29,12 +29,12 @@ $bmi      = ($user['weight'] && $user['height']) ? auth_calc_bmi($user['weight']
 $bmi_cat  = $bmi ? auth_bmi_category($bmi) : '—';
 $calories = auth_calc_calories($user);
 $bmi_pct  = $bmi ? max(2, min(98, round(($bmi - 10) / 30 * 100))) : 0;
-$bmi_color= match(true) {
-    !$bmi       => 'var(--border)',
-    $bmi < 18.5 => '#70b4c9',
-    $bmi < 25   => '#7cb87a',
-    $bmi < 30   => '#c9a870',
-    default     => '#c97070',
+$bmi_color = match(true) {
+    !$bmi       => '#d5dbd5',
+    $bmi < 18.5 => '#60a5fa',
+    $bmi < 25   => '#52b788',
+    $bmi < 30   => '#f59e0b',
+    default     => '#ef4444',
 };
 
 $goals = [
@@ -48,191 +48,291 @@ $genders = [
     'female'     => 'Female',
     'prefer_not' => 'Prefer not to say',
 ];
-$avatar = match($user['gender']) {
-    'female' => '👩', 'male' => '👨', default => '🧑'
-};
+$avatar = match($user['gender']) { 'female' => '👩', 'male' => '👨', default => '🧑' };
+$bmi_warn = $bmi && ($bmi < 18.5 || $bmi >= 30);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Profile — NutriPlan</title>
+  <title>My Profile — SmartMeal</title>
   <link rel="stylesheet" href="/web_nutrition_app/assets/css/auth.css">
-  <style>
-    .hidden { display:none !important; }
-    .tag { display:inline-block;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(124,184,122,.25);border-radius:99px;padding:.2rem .75rem;font-size:.78rem;font-weight:500; }
-    .info-row { display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;border-bottom:1px solid var(--border);font-size:.9rem; }
-    .info-row:last-child { border-bottom:none; }
-    .info-label { color:var(--text-muted);font-size:.8rem; }
-    .info-val   { color:var(--text);font-weight:500; }
-    body { padding-top:60px; }
-  </style>
 </head>
 <body>
-<div class="bg-mesh"></div>
-<div class="bg-grid"></div>
 
-<nav class="top-nav">
-  <a class="nav-brand" href="/web_nutrition_app/profile.php">🥗 NutriPlan</a>
-  <div class="nav-links">
-    <a href="/web_nutrition_app/profile.php" class="active">Profile</a>
-    <a href="/web_nutrition_app/logout.php" class="nav-logout">Sign out</a>
-  </div>
-</nav>
+<div class="app-wrap">
 
-<div class="page-wrap" style="align-items:flex-start;padding-top:2.5rem;">
-  <div class="profile-container">
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-icon">🥗</div>
+      <span class="sb-brand-name">SmartMeal</span>
+    </div>
 
-    <?php if (!empty($errors)): ?>
-      <div class="alert alert-error" style="margin-bottom:1.4rem;">
-        <span>⚠</span>
-        <div><?php foreach ($errors as $e) echo '<div>' . htmlspecialchars($e, ENT_QUOTES, 'UTF-8') . '</div>'; ?></div>
+    <div class="sb-section">Menu</div>
+    <a href="#" class="sb-link"><span class="sb-icon">🏠</span> Dashboard</a>
+    <a href="#" class="sb-link"><span class="sb-icon">📅</span> Meal Planner</a>
+    <a href="#" class="sb-link"><span class="sb-icon">🍎</span> Food</a>
+    <a href="/web_nutrition_app/profile.php" class="sb-link active"><span class="sb-icon">👤</span> Profile</a>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-user">
+      <div class="sb-avatar"><?= $avatar ?></div>
+      <div>
+        <div class="sb-user-name"><?= e(explode(' ', $user['name'])[0]) ?></div>
+        <div class="sb-user-role"><?= e(auth_goal_label($user['goal'] ?? '')) ?></div>
       </div>
-    <?php endif ?>
+    </div>
+  </aside>
 
-    <?php if ($success): ?>
-      <div class="alert alert-success" style="margin-bottom:1.4rem;">
-        <span>✓</span><div>Profile updated successfully.</div>
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="main">
+
+    <!-- Top bar -->
+    <div class="main-topbar">
+      <div>
+        <div class="main-topbar-title">My Profile</div>
+        <div class="main-topbar-sub">Manage your health information and account settings</div>
       </div>
-    <?php endif ?>
-
-    <div class="card">
-
-      <!-- Header -->
-      <div class="profile-header">
-        <div class="avatar"><?= $avatar ?></div>
-        <div class="profile-info" style="flex:1;">
-          <h2><?= e($user['name']) ?></h2>
-          <p><?= e($user['email']) ?></p>
-          <div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.4rem;">
-            <span class="tag"><?= e(auth_goal_label($user['goal'] ?? '')) ?></span>
-            <?php if ($bmi): ?>
-              <span class="tag" style="<?= ($bmi < 18.5 || $bmi >= 30) ? 'background:rgba(201,112,112,.1);color:var(--danger);border-color:rgba(201,112,112,.25)' : '' ?>">
-                BMI <?= $bmi ?>
-              </span>
-            <?php endif ?>
-          </div>
-        </div>
-        <div style="display:flex;gap:.5rem;flex-shrink:0;">
-          <button class="btn btn-secondary btn-sm" id="edit-btn">✏ Edit</button>
-          <button class="btn btn-secondary btn-sm hidden" id="cancel-btn">✕ Cancel</button>
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="val"><?= $bmi ?? '—' ?></div>
-          <div class="lbl">BMI</div>
-          <?php if ($bmi): ?>
-            <div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;"><?= e($bmi_cat) ?></div>
-            <div class="bmi-bar-bg" style="margin-top:.4rem;">
-              <div class="bmi-bar-fill" style="width:<?= $bmi_pct ?>%;background:<?= $bmi_color ?>;"></div>
-            </div>
-          <?php endif ?>
-        </div>
-        <div class="stat-card">
-          <div class="val"><?= $calories ? number_format($calories) : '—' ?></div>
-          <div class="lbl">Daily kcal</div>
-          <div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;">Estimated TDEE</div>
-        </div>
-        <div class="stat-card">
-          <div class="val"><?= $user['age'] ? e($user['age']) : '—' ?></div>
-          <div class="lbl">Age</div>
-          <div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;">
-            <?= $user['gender'] ? e($genders[$user['gender']] ?? $user['gender']) : '' ?>
-          </div>
-        </div>
-      </div>
-
-      <!-- View mode -->
-      <div id="view-mode">
-        <p class="section-title">Health Details</p>
-        <div class="info-row"><span class="info-label">Weight</span><span class="info-val"><?= $user['weight'] ? e($user['weight']) . ' kg' : '—' ?></span></div>
-        <div class="info-row"><span class="info-label">Height</span><span class="info-val"><?= $user['height'] ? e($user['height']) . ' cm' : '—' ?></span></div>
-        <div class="info-row"><span class="info-label">Goal</span><span class="info-val"><?= e(auth_goal_label($user['goal'] ?? '')) ?></span></div>
-        <div class="info-row"><span class="info-label">Member since</span><span class="info-val"><?= date('F j, Y', strtotime($user['created_at'])) ?></span></div>
-      </div>
-
-      <!-- Edit form -->
-      <form id="profile-form" method="POST" action="/web_nutrition_app/profile.php" class="hidden" novalidate>
-        <input type="hidden" name="_action" value="update_profile">
-        <p class="section-title">Edit Profile</p>
-        <div class="form-grid">
-
-          <div class="field full">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" name="name" value="<?= e($user['name']) ?>" required>
-          </div>
-
-          <div class="field">
-            <label for="age">Age</label>
-            <input type="number" id="age" name="age" value="<?= e($user['age'] ?? '') ?>" min="10" max="120" required>
-          </div>
-
-          <div class="field">
-            <label for="gender">Gender</label>
-            <select id="gender" name="gender" required>
-              <?php foreach ($genders as $val => $lbl): ?>
-                <option value="<?= e($val) ?>" <?= $user['gender'] === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
-              <?php endforeach ?>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="weight">Weight (kg)</label>
-            <input type="number" id="weight" name="weight" value="<?= e($user['weight'] ?? '') ?>" step="0.1" min="20" max="500" required>
-          </div>
-
-          <div class="field">
-            <label for="height">Height (cm)</label>
-            <input type="number" id="height" name="height" value="<?= e($user['height'] ?? '') ?>" step="0.1" min="50" max="300" required>
-          </div>
-
-          <!-- Live BMI -->
-          <div class="field full">
-            <div style="display:flex;align-items:center;gap:1rem;padding:.75rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);">
-              <span style="font-size:.8rem;color:var(--text-muted);">BMI Preview:</span>
-              <strong id="bmi-live" style="color:var(--accent);font-family:'Playfair Display',serif;">—</strong>
-              <span id="bmi-label" style="font-size:.8rem;color:var(--text-muted);"></span>
-              <div style="flex:1;"><div class="bmi-bar-bg"><div class="bmi-bar-fill" id="bmi-bar-fill" style="width:0;background:var(--accent);"></div></div></div>
-            </div>
-          </div>
-
-          <div class="field full">
-            <label for="goal">Health Goal</label>
-            <select id="goal" name="goal" required>
-              <?php foreach ($goals as $val => $lbl): ?>
-                <option value="<?= e($val) ?>" <?= $user['goal'] === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
-              <?php endforeach ?>
-            </select>
-          </div>
-
-        </div>
-
-        <div class="profile-actions">
-          <button type="submit" class="btn btn-primary" style="flex:1;">Save Changes</button>
-          <a href="/web_nutrition_app/logout.php" class="btn btn-danger btn-sm">Sign out</a>
-        </div>
-      </form>
-
-      <!-- View mode actions -->
-      <div id="view-actions" class="profile-actions" style="justify-content:flex-end;">
+      <div class="topbar-btns">
         <a href="/web_nutrition_app/logout.php" class="btn btn-danger btn-sm">Sign out</a>
       </div>
-
     </div>
-  </div>
+
+    <!-- Alerts -->
+    <?php if (!empty($errors)): ?>
+      <div class="alert alert-error" style="margin-bottom:1.2rem;">
+        <span>⚠</span>
+        <div><?php foreach ($errors as $err) echo '<div>' . e($err) . '</div>'; ?></div>
+      </div>
+    <?php endif ?>
+    <?php if ($success): ?>
+      <div class="alert alert-success" style="margin-bottom:1.2rem;">
+        ✓ Profile updated successfully.
+      </div>
+    <?php endif ?>
+
+    <!-- Profile banner -->
+    <div class="profile-banner">
+      <div class="profile-banner-avatar"><?= $avatar ?></div>
+      <div class="profile-banner-info">
+        <div class="profile-banner-name"><?= e($user['name']) ?></div>
+        <div class="profile-banner-email"><?= e($user['email']) ?></div>
+        <div class="profile-banner-tags">
+          <span class="banner-tag"><?= e(auth_goal_label($user['goal'] ?? '')) ?></span>
+          <?php if ($bmi): ?>
+            <span class="banner-tag <?= $bmi_warn ? 'warn' : '' ?>">
+              BMI <?= $bmi ?> — <?= e($bmi_cat) ?>
+            </span>
+          <?php endif ?>
+          <span class="banner-tag">Since <?= date('M Y', strtotime($user['created_at'])) ?></span>
+        </div>
+      </div>
+      <div class="profile-banner-actions">
+        <button class="btn btn-secondary btn-sm" id="edit-btn" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.2);color:#fff;">
+          ✏ Edit Profile
+        </button>
+        <button class="btn btn-secondary btn-sm hidden" id="cancel-btn" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.2);color:#fff;">
+          ✕ Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card green-card">
+        <div class="stat-lbl">Daily Calories</div>
+        <div class="stat-val"><?= $calories ? number_format($calories) : '—' ?></div>
+        <div class="stat-unit">kcal / day (TDEE)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">BMI</div>
+        <div class="stat-val" style="color:<?= $bmi_color ?>;"><?= $bmi ?? '—' ?></div>
+        <div class="stat-unit"><?= e($bmi_cat) ?></div>
+        <?php if ($bmi): ?>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-fill" style="width:<?= $bmi_pct ?>%;background:<?= $bmi_color ?>;"></div>
+          </div>
+        <?php endif ?>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Age & Gender</div>
+        <div class="stat-val"><?= $user['age'] ?? '—' ?></div>
+        <div class="stat-unit"><?= e($genders[$user['gender'] ?? ''] ?? '—') ?></div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="profile-grid">
+
+      <!-- Left: view mode + edit form -->
+      <div>
+
+        <!-- VIEW MODE -->
+        <div class="card" id="view-mode">
+          <div class="card-label">Health Details</div>
+
+          <div class="info-row">
+            <span class="info-key">Full Name</span>
+            <span class="info-val"><?= e($user['name']) ?></span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Email</span>
+            <span class="info-val"><?= e($user['email']) ?></span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Weight</span>
+            <span class="info-val"><?= $user['weight'] ? e($user['weight']) . ' kg' : '—' ?></span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Height</span>
+            <span class="info-val"><?= $user['height'] ? e($user['height']) . ' cm' : '—' ?></span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Gender</span>
+            <span class="info-val"><?= e($genders[$user['gender'] ?? ''] ?? '—') ?></span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Goal</span>
+            <span class="info-val">
+              <span class="badge"><?= e(auth_goal_label($user['goal'] ?? '')) ?></span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Member Since</span>
+            <span class="info-val"><?= date('F j, Y', strtotime($user['created_at'])) ?></span>
+          </div>
+        </div>
+
+        <!-- EDIT FORM -->
+        <div class="card hidden" id="edit-form-card">
+          <form method="POST" action="/web_nutrition_app/profile.php" novalidate>
+            <input type="hidden" name="_action" value="update_profile">
+
+            <div class="pf-form-section">Account</div>
+            <div class="pf-form-grid">
+              <div class="field full">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" value="<?= e($user['name']) ?>" required>
+              </div>
+            </div>
+
+            <div class="pf-form-section">Health Information</div>
+            <div class="pf-form-grid">
+              <div class="field">
+                <label for="age">Age</label>
+                <input type="number" id="age" name="age" value="<?= e($user['age'] ?? '') ?>" min="10" max="120" required>
+              </div>
+              <div class="field">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender" required>
+                  <?php foreach ($genders as $val => $lbl): ?>
+                    <option value="<?= e($val) ?>" <?= $user['gender'] === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+                  <?php endforeach ?>
+                </select>
+              </div>
+              <div class="field">
+                <label for="weight">Weight (kg)</label>
+                <input type="number" id="weight" name="weight" value="<?= e($user['weight'] ?? '') ?>" step="0.1" min="20" max="500" required>
+              </div>
+              <div class="field">
+                <label for="height">Height (cm)</label>
+                <input type="number" id="height" name="height" value="<?= e($user['height'] ?? '') ?>" step="0.1" min="50" max="300" required>
+              </div>
+
+              <!-- Live BMI in edit mode -->
+              <div class="field full">
+                <div class="bmi-strip">
+                  <div class="bmi-strip-val" id="bmi-live">—</div>
+                  <div class="bmi-strip-info">
+                    <div class="bmi-strip-cat" id="bmi-label">BMI Preview</div>
+                    <div class="bmi-bar-bg">
+                      <div class="bmi-bar-fill" id="bmi-bar-fill" style="width:0;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field full">
+                <label for="goal">Health Goal</label>
+                <select id="goal" name="goal" required>
+                  <?php foreach ($goals as $val => $lbl): ?>
+                    <option value="<?= e($val) ?>" <?= $user['goal'] === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+                  <?php endforeach ?>
+                </select>
+              </div>
+            </div>
+
+            <div class="pf-actions">
+              <button type="submit" class="btn btn-primary" style="flex:1;">Save Changes</button>
+              <a href="/web_nutrition_app/logout.php" class="btn btn-danger btn-sm">Sign out</a>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right: quick info card -->
+      <div>
+        <div class="card">
+          <div class="card-label">Nutrition Summary</div>
+
+          <div style="text-align:center;padding:1rem 0 1.5rem;">
+            <div style="font-size:2.8rem;font-family:'Lora',serif;font-weight:700;color:var(--green-600);">
+              <?= $calories ? number_format($calories) : '—' ?>
+            </div>
+            <div style="font-size:0.78rem;color:var(--gray-400);margin-top:0.25rem;">estimated daily kcal</div>
+            <div style="margin-top:1rem;">
+              <span class="badge"><?= e(auth_goal_label($user['goal'] ?? '')) ?></span>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--gray-50);padding-top:1rem;">
+            <div class="info-row" style="font-size:0.82rem;">
+              <span class="info-key">Weight</span>
+              <span class="info-val"><?= $user['weight'] ? e($user['weight']) . ' kg' : '—' ?></span>
+            </div>
+            <div class="info-row" style="font-size:0.82rem;">
+              <span class="info-key">Height</span>
+              <span class="info-val"><?= $user['height'] ? e($user['height']) . ' cm' : '—' ?></span>
+            </div>
+            <div class="info-row" style="font-size:0.82rem;">
+              <span class="info-key">BMI</span>
+              <span class="info-val" style="color:<?= $bmi_color ?>;"><?= $bmi ?? '—' ?></span>
+            </div>
+            <div class="info-row" style="font-size:0.82rem;">
+              <span class="info-key">Category</span>
+              <span class="info-val"><?= e($bmi_cat) ?></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /profile-grid -->
+  </main>
 </div>
 
 <script src="/web_nutrition_app/assets/js/auth.js"></script>
 <script>
-  const editBtn  = document.getElementById('edit-btn');
-  const cancelBtn= document.getElementById('cancel-btn');
-  const viewActs = document.getElementById('view-actions');
-  editBtn?.addEventListener('click',   () => viewActs?.classList.add('hidden'));
-  cancelBtn?.addEventListener('click', () => viewActs?.classList.remove('hidden'));
+  const editBtn     = document.getElementById('edit-btn');
+  const cancelBtn   = document.getElementById('cancel-btn');
+  const viewMode    = document.getElementById('view-mode');
+  const editFormCard= document.getElementById('edit-form-card');
+
+  editBtn?.addEventListener('click', () => {
+    viewMode.classList.add('hidden');
+    editFormCard.classList.remove('hidden');
+    editBtn.classList.add('hidden');
+    cancelBtn.classList.remove('hidden');
+  });
+  cancelBtn?.addEventListener('click', () => {
+    viewMode.classList.remove('hidden');
+    editFormCard.classList.add('hidden');
+    editBtn.classList.remove('hidden');
+    cancelBtn.classList.add('hidden');
+  });
 </script>
 </body>
 </html>
