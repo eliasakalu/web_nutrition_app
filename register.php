@@ -1,209 +1,146 @@
 <?php
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/auth_functions.php';
+require_once 'config/db.php';
+require_once 'includes/auth_functions.php';
 
 auth_start_session();
-if (auth_is_logged_in()) { header('Location: /web_nutrition_app/profile.php'); exit; }
+if (auth_is_logged_in()) {
+    header('Location: dashboard.php');
+    exit;
+}
 
-$errors = [];
-$old    = [];
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $old        = $_POST;
-    $validation = auth_validate_register($_POST);
-    if (!$validation['ok']) {
-        $errors = $validation['errors'];
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm = $_POST['confirm_password'] ?? '';
+    $age = (int)$_POST['age'] ?? 0;
+    $weight = (float)$_POST['weight'] ?? 0;
+    $height = (float)$_POST['height'] ?? 0;
+    $gender = $_POST['gender'] ?? '';
+    $goal = $_POST['goal'] ?? '';
+    
+    // Validation
+    if (strlen($name) < 2) {
+        $error = 'Name must be at least 2 characters';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Enter a valid email address';
+    } elseif (strlen($password) < 6) {
+        $error = 'Password must be at least 6 characters';
+    } elseif ($password !== $confirm) {
+        $error = 'Passwords do not match';
+    } elseif ($age < 10 || $age > 120) {
+        $error = 'Enter a valid age (10-120)';
+    } elseif ($weight < 20 || $weight > 300) {
+        $error = 'Enter a valid weight (20-300 kg)';
+    } elseif ($height < 50 || $height > 250) {
+        $error = 'Enter a valid height (50-250 cm)';
     } else {
-        $result = auth_register($pdo, $_POST);
+        $result = auth_register($pdo, [
+            'name' => $name, 'email' => $email, 'password' => $password,
+            'age' => $age, 'weight' => $weight, 'height' => $height,
+            'gender' => $gender, 'goal' => $goal
+        ]);
+        
         if ($result['ok']) {
-            $_SESSION['user_id']   = $result['user_id'];
-            $_SESSION['user_name'] = trim($_POST['name']);
-            header('Location: /web_nutrition_app/profile.php'); exit;
+            $_SESSION['user_id'] = $result['user_id'];
+            $_SESSION['user_name'] = $name;
+            header('Location: dashboard.php');
+            exit;
         } else {
-            $errors[] = $result['error'];
+            $error = $result['error'];
         }
     }
 }
-
-$goals = [
-    'lose_weight'    => 'Lose Weight',
-    'maintain'       => 'Maintain Weight',
-    'gain_muscle'    => 'Gain Muscle',
-    'improve_health' => 'Improve Overall Health',
-];
-$genders = [
-    'male'       => 'Male',
-    'female'     => 'Female',
-    'prefer_not' => 'Prefer not to say',
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Create Account — SmartMeal</title>
-  <link rel="stylesheet" href="/web_nutrition_app/assets/css/auth.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Smart Meal Planner</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-<div class="auth-layout">
-
-  <!-- ── LEFT: green hero ── -->
-  <div class="auth-hero">
-    <div class="hero-overlay"></div>
-    <div class="hero-overlay-grad"></div>
-
-    <div class="hero-top">
-      <div class="hero-brand">
-        <div class="hero-brand-icon">🥗</div>
-        <span class="hero-brand-name">SmartMeal</span>
-      </div>
-    </div>
-
-    <div class="hero-bottom">
-      <h2 class="hero-headline">Fuelling your journey to wellness.</h2>
-      <p class="hero-sub">Expertly crafted meal plans designed for your unique lifestyle and nutritional goals.</p>
-      <div class="hero-chips">
-        <span class="hero-chip">🥦 Personalised Plans</span>
-        <span class="hero-chip">📊 BMI Tracking</span>
-        <span class="hero-chip">🍽 Weekly Planner</span>
-        <span class="hero-chip">🔥 Calorie Goals</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── RIGHT: form ── -->
-  <div class="auth-panel">
-    <div class="auth-box" style="max-width:440px;">
-
-      <h1 class="auth-box-title">Create Account</h1>
-      <p class="auth-box-sub">Join our community to start your nutritional journey.</p>
-
-      <?php if (!empty($errors)): ?>
-        <div class="alert alert-error">
-          <span>⚠</span>
-          <div><?php foreach ($errors as $err) echo '<div>' . e($err) . '</div>'; ?></div>
-        </div>
-      <?php endif ?>
-
-      <form method="POST" action="/web_nutrition_app/register.php" novalidate>
-
-        <!-- Account details -->
-        <div class="field">
-          <label for="name">Full Name</label>
-          <input type="text" id="name" name="name"
-                 value="<?= e($old['name'] ?? '') ?>"
-                 placeholder="Jane Doe" required autocomplete="name">
-        </div>
-
-        <div class="field">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" name="email"
-                 value="<?= e($old['email'] ?? '') ?>"
-                 placeholder="jane@example.com" required autocomplete="email">
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="input-wrap">
-              <input type="password" id="password" name="password"
-                     placeholder="Min. 8 chars" required autocomplete="new-password">
-              <button type="button" class="pw-eye" data-pw-toggle="password">👁</button>
+    <div class="form-container">
+        <a href="index.php" class="auth-home-link">Back to Home</a>
+        <h2>Create Account</h2>
+        <p>Join us to start your health journey</p>
+        
+        <?php if($error): ?>
+            <div class="alert alert-error"><?php echo e($error); ?></div>
+        <?php endif; ?>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" required placeholder="Enter your name">
             </div>
-            <span class="field-hint" id="pw-strength"></span>
-          </div>
-          <div class="field">
-            <label for="confirm_password">Confirm Password</label>
-            <input type="password" id="confirm_password" name="confirm_password"
-                   placeholder="Repeat password" required autocomplete="new-password">
-            <span class="field-hint" id="confirm-msg"></span>
-          </div>
-        </div>
-
-        <!-- Health profile -->
-        <div class="field-section">Health Profile</div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="age">Age</label>
-            <input type="number" id="age" name="age"
-                   value="<?= e($old['age'] ?? '') ?>"
-                   placeholder="25" min="10" max="120" required>
-          </div>
-          <div class="field">
-            <label for="gender">Gender</label>
-            <select id="gender" name="gender" required>
-              <option value="">Select…</option>
-              <?php foreach ($genders as $val => $lbl): ?>
-                <option value="<?= e($val) ?>" <?= ($old['gender'] ?? '') === $val ? 'selected' : '' ?>>
-                  <?= e($lbl) ?>
-                </option>
-              <?php endforeach ?>
-            </select>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="weight">Weight (kg)</label>
-            <input type="number" id="weight" name="weight"
-                   value="<?= e($old['weight'] ?? '') ?>"
-                   placeholder="70" step="0.1" min="20" max="500" required>
-          </div>
-          <div class="field">
-            <label for="height">Height (cm)</label>
-            <input type="number" id="height" name="height"
-                   value="<?= e($old['height'] ?? '') ?>"
-                   placeholder="170" step="0.1" min="50" max="300" required>
-          </div>
-        </div>
-
-        <!-- Live BMI -->
-        <div class="bmi-strip">
-          <div class="bmi-strip-val" id="bmi-live">—</div>
-          <div class="bmi-strip-info">
-            <div class="bmi-strip-cat" id="bmi-label">Enter weight & height to preview BMI</div>
-            <div class="bmi-bar-bg">
-              <div class="bmi-bar-fill" id="bmi-bar-fill" style="width:0;"></div>
+            
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" required placeholder="Enter your email">
             </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="goal">Health Goal</label>
-          <select id="goal" name="goal" required>
-            <option value="">Select your primary goal…</option>
-            <?php foreach ($goals as $val => $lbl): ?>
-              <option value="<?= e($val) ?>" <?= ($old['goal'] ?? '') === $val ? 'selected' : '' ?>>
-                <?= e($lbl) ?>
-              </option>
-            <?php endforeach ?>
-          </select>
-        </div>
-
-        <div style="margin-top:1.4rem;">
-          <button type="submit" class="btn btn-primary">Create Account →</button>
-        </div>
-
-        <div class="or-row">or continue with</div>
-        <button type="button" class="btn btn-secondary" style="width:100%;">🔗 Sign up with SSO</button>
-
-      </form>
-
-      <div class="auth-foot">
-        Already have an account? <a href="/web_nutrition_app/login.php">Log in</a>
-      </div>
-      <div class="auth-privacy">
-        <a href="#">Privacy Policy</a> · <a href="#">Terms of Service</a>
-      </div>
-
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="Min 6 characters">
+                </div>
+                
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" name="confirm_password" required placeholder="Confirm password">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Age</label>
+                    <input type="number" name="age" required placeholder="25">
+                </div>
+                
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select name="gender" required>
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="prefer_not">Prefer not to say</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" step="0.1" name="weight" required placeholder="70">
+                </div>
+                
+                <div class="form-group">
+                    <label>Height (cm)</label>
+                    <input type="number" step="0.1" name="height" required placeholder="170">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Health Goal</label>
+                <select name="goal" required>
+                    <option value="">Select your goal</option>
+                    <option value="lose_weight">Lose Weight</option>
+                    <option value="maintain">Maintain Weight</option>
+                    <option value="gain_muscle">Gain Muscle</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            
+            <div class="text-center" style="margin-top: 20px;">
+                <p>Already have an account? <a href="login.php" style="color: #2e7d32;">Login here</a></p>
+            </div>
+        </form>
     </div>
-  </div>
-
-</div>
-
-<script src="/web_nutrition_app/assets/js/auth.js"></script>
 </body>
 </html>

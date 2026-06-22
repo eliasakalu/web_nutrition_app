@@ -1,14 +1,13 @@
 <?php
+$host = 'localhost';
+$dbname = 'smart_meal_planner';
+$username = 'root';
+$password = '';
 
-$host = "localhost";
-$user = "root";
-$password = "";
-$database = "smart_meal_planner";
-
-$conn = mysqli_connect($host, $user, $password, $database);
-
-if(!$conn){
-    die("Database Connection Failed");
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
-
 ?>
